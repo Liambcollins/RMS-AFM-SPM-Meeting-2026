@@ -1,14 +1,355 @@
-spm-ml-tutorial
-│
-├── docs
-│   ├── index.html   ← tutorial homepage
-│   ├── graphics
-│   │   └── afm_ml_diagram.svg
-│
-├── notebooks
-│
-├── src
-│
-├── data
-│
-└── README.md
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Machine Learning in Scanning Probe Microscopy — RMS 2026</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* Animated gradient hero */
+    .hero-bg {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0f4c81 70%, #1a1a2e 100%);
+    }
+
+    /* Subtle scanline texture for SPM feel */
+    .scanline::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 3px,
+        rgba(255,255,255,0.015) 3px,
+        rgba(255,255,255,0.015) 4px
+      );
+      pointer-events: none;
+    }
+
+    /* Glow accent */
+    .glow { text-shadow: 0 0 40px rgba(99,179,237,0.5); }
+
+    /* Module card hover */
+    .module-card {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .module-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px rgba(99,179,237,0.18);
+    }
+
+    /* Workflow diagram */
+    .workflow-step {
+      position: relative;
+    }
+    .workflow-step:not(:last-child)::after {
+      content: '→';
+      position: absolute;
+      right: -1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #63b3ed;
+      font-size: 1.25rem;
+    }
+
+    /* Pill badge */
+    .badge {
+      background: rgba(99,179,237,0.15);
+      border: 1px solid rgba(99,179,237,0.35);
+      color: #90cdf4;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans antialiased">
+
+  <!-- ─── NAV ─────────────────────────────────────────────────────── -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-gray-950/80 backdrop-blur border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+      <span class="text-blue-400 font-semibold tracking-wide text-sm">ML in SPM · RMS 2026</span>
+      <div class="flex gap-6 text-sm text-gray-400">
+        <a href="#modules"  class="hover:text-blue-300 transition">Modules</a>
+        <a href="#overview" class="hover:text-blue-300 transition">Overview</a>
+        <a href="#setup"    class="hover:text-blue-300 transition">Setup</a>
+        <a href="https://github.com/liamcollins/rms-spm-ml-tutorial-2026"
+           class="hover:text-blue-300 transition" target="_blank">GitHub →</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ─────────────────────────────────────────────────────── -->
+  <section class="hero-bg scanline relative min-h-screen flex flex-col items-center justify-center text-center px-6 pt-20 pb-16 overflow-hidden">
+
+    <!-- Background SPM-scan decorative circles -->
+    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+      <div class="w-[600px] h-[600px] rounded-full border border-blue-400"></div>
+      <div class="absolute w-[400px] h-[400px] rounded-full border border-blue-300"></div>
+      <div class="absolute w-[200px] h-[200px] rounded-full border border-blue-200"></div>
+    </div>
+
+    <p class="badge text-xs font-semibold px-3 py-1 rounded-full mb-6 inline-block">
+      RMS AFM &amp; SPM Meeting 2026 · Tutorial
+    </p>
+
+    <h1 class="glow text-5xl md:text-7xl font-extrabold tracking-tight mb-4 leading-tight">
+      Machine Learning<br/>
+      <span class="text-blue-400">in Scanning Probe</span><br/>
+      Microscopy
+    </h1>
+
+    <p class="mt-4 text-lg md:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
+      A hands‑on tutorial exploring how machine learning enables smarter SPM workflows —
+      from PCA denoising and clustering to fast, adaptive, and autonomous measurements.
+    </p>
+
+    <div class="mt-10 flex flex-wrap gap-4 justify-center">
+      <a href="#modules"
+         class="bg-blue-600 hover:bg-blue-500 text-white px-7 py-3 rounded-lg font-semibold transition shadow-lg">
+        Explore Modules
+      </a>
+      <a href="#overview"
+         class="border border-gray-600 hover:border-blue-400 text-gray-200 hover:text-blue-300 px-7 py-3 rounded-lg font-semibold transition">
+        Repository Overview
+      </a>
+    </div>
+
+    <!-- Module quick-links row -->
+    <div class="mt-16 flex flex-wrap gap-3 justify-center text-sm">
+      <span class="badge px-4 py-1.5 rounded-full">PCA Denoising</span>
+      <span class="badge px-4 py-1.5 rounded-full">Clustering</span>
+      <span class="badge px-4 py-1.5 rounded-full">Phase Mapping</span>
+      <span class="badge px-4 py-1.5 rounded-full">Smart Measurements</span>
+      <span class="badge px-4 py-1.5 rounded-full">Autonomous SPM</span>
+    </div>
+  </section>
+
+  <!-- ─── WORKFLOW DIAGRAM ──────────────────────────────────────────── -->
+  <section class="bg-gray-900 py-14 px-6">
+    <div class="max-w-5xl mx-auto">
+      <p class="text-center text-xs uppercase tracking-widest text-blue-400 font-semibold mb-8">
+        ML‑Enhanced SPM Workflow
+      </p>
+      <div class="flex flex-wrap justify-center gap-x-10 gap-y-4">
+        <!-- steps -->
+        <div class="workflow-step flex flex-col items-center gap-2 text-center w-28">
+          <div class="w-14 h-14 rounded-xl bg-blue-900/60 border border-blue-700 flex items-center justify-center text-2xl">🔬</div>
+          <span class="text-xs text-gray-300 leading-tight">SPM<br/>Acquisition</span>
+        </div>
+        <div class="workflow-step flex flex-col items-center gap-2 text-center w-28">
+          <div class="w-14 h-14 rounded-xl bg-blue-900/60 border border-blue-700 flex items-center justify-center text-2xl">🧹</div>
+          <span class="text-xs text-gray-300 leading-tight">PCA<br/>Denoising</span>
+        </div>
+        <div class="workflow-step flex flex-col items-center gap-2 text-center w-28">
+          <div class="w-14 h-14 rounded-xl bg-blue-900/60 border border-blue-700 flex items-center justify-center text-2xl">🗂️</div>
+          <span class="text-xs text-gray-300 leading-tight">Clustering &amp;<br/>Phase Maps</span>
+        </div>
+        <div class="workflow-step flex flex-col items-center gap-2 text-center w-28">
+          <div class="w-14 h-14 rounded-xl bg-blue-900/60 border border-blue-700 flex items-center justify-center text-2xl">⚡</div>
+          <span class="text-xs text-gray-300 leading-tight">Sparse Smart<br/>Sampling</span>
+        </div>
+        <div class="flex flex-col items-center gap-2 text-center w-28">
+          <div class="w-14 h-14 rounded-xl bg-indigo-900/60 border border-indigo-500 flex items-center justify-center text-2xl">🤖</div>
+          <span class="text-xs text-gray-300 leading-tight">Autonomous<br/>SPM Loop</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── OVERVIEW ─────────────────────────────────────────────────── -->
+  <section id="overview" class="py-20 px-6 bg-gray-950">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4 text-center">Repository Overview</h2>
+      <p class="text-gray-400 text-center max-w-2xl mx-auto mb-14 leading-relaxed">
+        This repository accompanies the <span class="text-blue-300 font-medium">Machine Learning in SPM</span>
+        tutorial at the RMS AFM &amp; SPM Meeting 2026. It contains notebooks, synthetic datasets,
+        and example workflows demonstrating how ML can enhance modern SPM experiments.
+      </p>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div class="text-2xl mb-3">📦</div>
+          <h3 class="font-semibold text-blue-300 mb-2">Portable Demos</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Synthetic SPM‑like datasets allow all examples to run anywhere —
+            no instrument access or proprietary file formats required.
+          </p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div class="text-2xl mb-3">📓</div>
+          <h3 class="font-semibold text-blue-300 mb-2">Notebook‑First</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Interactive Jupyter notebooks provide visual explanations and
+            runnable demonstrations, suitable for live demo or self‑study.
+          </p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div class="text-2xl mb-3">🧠</div>
+          <h3 class="font-semibold text-blue-300 mb-2">Practical ML</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Examples focus on real SPM problems — noisy hyperspectral data,
+            domain mapping, and signal recovery — using only common Python packages.
+          </p>
+        </div>
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+          <div class="text-2xl mb-3">🔮</div>
+          <h3 class="font-semibold text-blue-300 mb-2">Future SPM</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Later modules explore smart measurements, adaptive sampling, and
+            autonomous microscopy — the frontier of intelligent instrumentation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MODULES ──────────────────────────────────────────────────── -->
+  <section id="modules" class="py-20 px-6 bg-gray-900">
+    <div class="max-w-5xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4 text-center">Tutorial Modules</h2>
+      <p class="text-gray-400 text-center max-w-xl mx-auto mb-14 text-sm leading-relaxed">
+        The tutorial progresses from simple ML tools to advanced autonomous measurement concepts.
+        Each notebook is self‑contained and runs on synthetic data.
+      </p>
+
+      <div class="grid md:grid-cols-2 gap-5">
+
+        <!-- 00 -->
+        <div class="module-card bg-gray-950 border border-gray-800 rounded-2xl p-6">
+          <span class="text-xs badge px-2 py-0.5 rounded font-mono">00</span>
+          <h3 class="text-lg font-semibold mt-3 mb-1">Setup &amp; Overview</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Motivation for ML in SPM, data types encountered in the field,
+            and a tour of the tutorial structure. Includes environment checks.
+          </p>
+          <p class="mt-3 text-xs text-blue-400 font-mono">00_setup_and_overview.ipynb</p>
+        </div>
+
+        <!-- 01 -->
+        <div class="module-card bg-gray-950 border border-gray-800 rounded-2xl p-6">
+          <span class="text-xs badge px-2 py-0.5 rounded font-mono">01</span>
+          <h3 class="text-lg font-semibold mt-3 mb-1">PCA Denoising</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Use dimensionality reduction to separate signal from noise in
+            synthetic hyperspectral SPM data. Includes scree plots, component
+            maps, and reconstruction comparisons.
+          </p>
+          <p class="mt-3 text-xs text-blue-400 font-mono">01_pca_denoising.ipynb</p>
+        </div>
+
+        <!-- 02 -->
+        <div class="module-card bg-gray-950 border border-gray-800 rounded-2xl p-6">
+          <span class="text-xs badge px-2 py-0.5 rounded font-mono">02</span>
+          <h3 class="text-lg font-semibold mt-3 mb-1">Clustering &amp; Phase Mapping</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Automatically discover domains and material regions using KMeans
+            and Gaussian Mixture Models. Includes soft‑assignment heatmaps
+            and cluster quality metrics.
+          </p>
+          <p class="mt-3 text-xs text-blue-400 font-mono">02_clustering_phase_mapping.ipynb</p>
+        </div>
+
+        <!-- 03 -->
+        <div class="module-card bg-gray-950 border border-gray-800 rounded-2xl p-6">
+          <span class="text-xs badge px-2 py-0.5 rounded font-mono">03</span>
+          <h3 class="text-lg font-semibold mt-3 mb-1">Sparse &amp; Smart Measurements</h3>
+          <p class="text-gray-400 text-sm leading-relaxed">
+            Demonstrate how fewer measurements can still recover spatial
+            structure. Compare random, grid, and gradient‑guided sampling
+            strategies with reconstruction quality curves.
+          </p>
+          <p class="mt-3 text-xs text-blue-400 font-mono">03_sparse_smart_measurements.ipynb</p>
+        </div>
+
+        <!-- 04 -->
+        <div class="module-card bg-gray-950 border border-indigo-900 rounded-2xl p-6 md:col-span-2">
+          <span class="text-xs badge px-2 py-0.5 rounded font-mono">04</span>
+          <h3 class="text-lg font-semibold mt-3 mb-1">Autonomous SPM <span class="text-indigo-400 text-sm font-normal ml-1">· Flagship Demo</span></h3>
+          <p class="text-gray-400 text-sm leading-relaxed max-w-2xl">
+            Implement a toy closed‑loop adaptive measurement loop. The virtual instrument
+            decides where to measure next based on uncertainty and gradient scores,
+            then updates its model estimate. Visualise the measurement path and compare
+            adaptive vs random sampling — this is the future of intelligent microscopy.
+          </p>
+          <p class="mt-3 text-xs text-blue-400 font-mono">04_autonomous_spm.ipynb</p>
+        </div>
+
+      </div>
+
+      <!-- Optional modules -->
+      <div class="mt-10 border border-gray-800 rounded-2xl p-6">
+        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-widest mb-4">
+          Optional / Advanced Modules
+        </h3>
+        <div class="grid md:grid-cols-3 gap-4 text-sm">
+          <div>
+            <span class="font-mono text-blue-400 text-xs">05</span>
+            <p class="font-medium mt-1">Manifold Learning</p>
+            <p class="text-gray-500 text-xs mt-0.5">UMAP / t-SNE for hyperspectral SPM data</p>
+          </div>
+          <div>
+            <span class="font-mono text-blue-400 text-xs">06</span>
+            <p class="font-medium mt-1">Image Segmentation</p>
+            <p class="text-gray-500 text-xs mt-0.5">Automated domain identification</p>
+          </div>
+          <div>
+            <span class="font-mono text-blue-400 text-xs">07</span>
+            <p class="font-medium mt-1">Physics‑Informed ML</p>
+            <p class="text-gray-500 text-xs mt-0.5">Rapid spectroscopy parameter extraction</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SETUP ────────────────────────────────────────────────────── -->
+  <section id="setup" class="py-20 px-6 bg-gray-950">
+    <div class="max-w-3xl mx-auto">
+      <h2 class="text-3xl font-bold mb-4 text-center">Getting Started</h2>
+      <p class="text-gray-400 text-center mb-12 text-sm">
+        All notebooks run on synthetic data. No instrument access or proprietary files needed.
+      </p>
+
+      <div class="space-y-4">
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-xs text-blue-400 font-semibold uppercase tracking-wide mb-3">1 · Clone</p>
+          <pre class="bg-gray-950 text-green-300 text-sm rounded-lg p-4 overflow-x-auto"><code>git clone https://github.com/liamcollins/rms-spm-ml-tutorial-2026.git
+cd rms-spm-ml-tutorial-2026</code></pre>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-xs text-blue-400 font-semibold uppercase tracking-wide mb-3">2 · Create environment</p>
+          <pre class="bg-gray-950 text-green-300 text-sm rounded-lg p-4 overflow-x-auto"><code># With conda (recommended)
+conda env create -f environment.yml
+conda activate spm-ml-tutorial
+
+# Or with pip
+pip install -r requirements.txt</code></pre>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <p class="text-xs text-blue-400 font-semibold uppercase tracking-wide mb-3">3 · Launch JupyterLab</p>
+          <pre class="bg-gray-950 text-green-300 text-sm rounded-lg p-4 overflow-x-auto"><code>jupyter lab</code></pre>
+          <p class="text-gray-500 text-xs mt-3">Then open any notebook in the <code class="text-gray-300">notebooks/</code> folder.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ───────────────────────────────────────────────────── -->
+  <footer class="bg-gray-900 border-t border-gray-800 py-10 px-6 text-center text-sm text-gray-500">
+    <p class="font-medium text-gray-300 mb-1">RMS AFM &amp; SPM Meeting 2026 · Tutorial</p>
+    <p class="mb-4">Machine Learning for Scanning Probe Microscopy · <span class="text-gray-400">Liam Collins</span></p>
+    <div class="flex gap-6 justify-center">
+      <a href="https://github.com/liamcollins/rms-spm-ml-tutorial-2026"
+         class="hover:text-blue-400 transition" target="_blank">View Repo →</a>
+      <a href="#modules" class="hover:text-blue-400 transition">Start Tutorial →</a>
+    </div>
+    <p class="mt-6 text-xs text-gray-700">
+      This repository is under active development. Some examples may be incomplete or contain mistakes —
+      please report any issues via GitHub.
+    </p>
+  </footer>
+
+</body>
+</html>
