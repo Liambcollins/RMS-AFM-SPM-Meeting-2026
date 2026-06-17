@@ -79,3 +79,72 @@ def reconstruction_error(ground_truth, reconstruction):
     error = reconstruction - ground_truth
     rmse = float(np.sqrt(np.mean(error ** 2)))
     return error, rmse
+
+
+def spiral_mask(shape, n_turns=11, n_points=2600, random_state=None):
+    """
+    Generate a sparse **spiral scan** sampling pattern (Archimedean spiral).
+
+    Spiral trajectories are used in fast SPM because they avoid the abrupt
+    turnarounds of a raster and keep the tip moving smoothly.
+
+    Parameters
+    ----------
+    shape : tuple (ny, nx)
+    n_turns : float       number of spiral revolutions
+    n_points : int        samples taken along the spiral (denser -> more pixels)
+
+    Returns
+    -------
+    mask : bool ndarray (ny, nx)   sampled pixels
+    path : tuple(xs, ys)           continuous spiral coordinates (for plotting)
+    """
+    ny, nx = shape
+    cx, cy = (nx - 1) / 2.0, (ny - 1) / 2.0
+    theta = np.linspace(0.0, 2 * np.pi * n_turns, int(n_points))
+    rmax = min(cx, cy)
+    r = rmax * theta / theta.max()
+    xs = cx + r * np.cos(theta)
+    ys = cy + r * np.sin(theta)
+    xi = np.clip(np.round(xs).astype(int), 0, nx - 1)
+    yi = np.clip(np.round(ys).astype(int), 0, ny - 1)
+    mask = np.zeros(shape, dtype=bool)
+    mask[yi, xi] = True
+    return mask, (xs, ys)
+
+
+def reconstruct_gp(image, mask, length_scale=5.0, noise_level=1e-2,
+                   optimize=True, random_state=0):
+    """
+    Reconstruct a 2-D image from sparse samples with **Gaussian Process**
+    regression. Unlike interpolation, a GP also returns a per-pixel
+    **uncertainty** (predictive std) — high where samples are sparse.
+
+    Returns
+    -------
+    mean : ndarray (ny, nx)   posterior mean (the reconstruction)
+    std  : ndarray (ny, nx)   posterior standard deviation (uncertainty)
+    """
+    from sklearn.gaussian_process import GaussianProcessRegressor
+    from sklearn.gaussian_process.kernels import RBF, ConstantKernel, WhiteKernel
+
+    ny, nx = image.shape
+    coords = np.stack(np.mgrid[0:ny, 0:nx], axis=-1).reshape(-1, 2).astype(float)
+    obs = mask.ravel()
+    X_obs, y_obs = coords[obs], image.ravel()[obs]
+
+    kernel = (ConstantKernel(1.0, (1e-2, 1e2))
+              * RBF(length_scale, (1.0, 30.0))
+              + WhiteKernel(noise_level, (1e-5, 1e-1)))
+    gp = GaussianProcessRegressor(
+        kernel=kernel, normalize_y=True, random_state=random_state,
+        optimizer='fmin_l_bfgs_b' if optimize else None,
+        n_restarts_optimizer=0)
+    gp.fit(X_obs, y_obs)
+
+    # predict in chunks to keep memory modest
+    mean = np.empty(coords.shape[0]); std = np.empty(coords.shape[0])
+    for i in range(0, coords.shape[0], 2048):
+        sl = slice(i, i + 2048)
+        mean[sl], std[sl] = gp.predict(coords[sl], return_std=True)
+    return mean.reshape(ny, nx), std.reshape(ny, nx)

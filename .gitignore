@@ -30,10 +30,14 @@ data/raw/*.nid
 data/processed/*.npy
 data/processed/*.npz
 
-# Figures (generated)
+# Figures (scratch generated) — but keep curated tutorial figures + QR
 figures/*.png
 figures/*.pdf
 figures/*.svg
+!figures/fig_*.png
+!figures/qr_repo.png
+!figures/rung_*.png
+!figures/uns_*.png
 
 # OS
 .DS_Store
@@ -44,3 +48,8 @@ desktop.ini
 .vscode/settings.json
 .idea/
 *.swp
+
+# --- large data & local settings (not pushed) ---
+.claude/
+data/raw/
+notebooks/annexin_exports/

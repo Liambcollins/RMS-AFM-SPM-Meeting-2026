@@ -206,3 +206,168 @@ def make_adaptive_target(size=32, random_state=42):
     image -= image.min()
     image /= image.max() + 1e-8
     return image.astype(np.float32)
+
+
+# ---------------------------------------------------------------------------
+# Supervised-learning datasets (regression & classification)
+# ---------------------------------------------------------------------------
+
+def make_fd_curve(z_nm=None, k_cantilever=0.4, invols_nm_per_v=55.0,
+                  E_modulus_kpa=120.0, adhesion_nn=4.0, tip_radius_nm=20.0,
+                  contact_point_nm=0.0, noise_pn=120.0, random_state=42):
+    """
+    Generate a synthetic AFM force-distance (F-D) curve (approach segment).
+
+    Physics: free region (no force) before contact, then a Hertzian contact
+    regime F = (4/3) E* sqrt(R) delta^(3/2) once the tip indents the surface,
+    plus an attractive adhesion offset and detector noise.
+
+    Returns
+    -------
+    z_nm : ndarray  (piezo z position, nm)
+    force_nn : ndarray  (measured force, nN)
+    meta : dict  (ground-truth parameters)
+    """
+    rng = np.random.default_rng(random_state)
+    if z_nm is None:
+        z_nm = np.linspace(-60.0, 40.0, 400)  # negative = approaching, positive = indenting
+
+    E_pa = E_modulus_kpa * 1e3
+    E_star = E_pa / (1 - 0.5 ** 2)          # Poisson ratio 0.5 (soft matter)
+    R = tip_radius_nm * 1e-9
+
+    delta = np.clip(z_nm - contact_point_nm, 0, None) * 1e-9  # indentation (m)
+    F_contact = (4.0 / 3.0) * E_star * np.sqrt(R) * delta ** 1.5  # N
+    force_nn = F_contact * 1e9                                    # nN
+    force_nn += rng.normal(0, noise_pn * 1e-3, force_nn.shape)     # detector noise (nN)
+
+    meta = dict(k_cantilever=k_cantilever, invols_nm_per_v=invols_nm_per_v,
+                E_modulus_kpa=E_modulus_kpa, adhesion_nn=adhesion_nn,
+                tip_radius_nm=tip_radius_nm, contact_point_nm=contact_point_nm)
+    return z_nm.astype(np.float32), force_nn.astype(np.float32), meta
+
+
+def make_modulus_dataset(n_samples=400, random_state=42):
+    """
+    Tabular regression dataset: predict sample Young's modulus from features
+    extracted from force-distance curves.
+
+    Features (per curve): contact_stiffness, adhesion, indentation_depth,
+    contact_slope, noise_rms. Target: Young's modulus (kPa).
+
+    Returns
+    -------
+    X : ndarray (n_samples, 5)
+    y : ndarray (n_samples,)   modulus in kPa
+    feature_names : list[str]
+    """
+    rng = np.random.default_rng(random_state)
+    E = rng.uniform(20, 400, n_samples)                       # true modulus (kPa)
+    contact_stiffness = 0.08 * E + rng.normal(0, 1.5, n_samples)      # ~ linear in E
+    indentation = 220.0 / np.sqrt(E) + rng.normal(0, 3.0, n_samples)  # softer -> deeper
+    contact_slope = 0.05 * E + rng.normal(0, 1.0, n_samples)
+    adhesion = rng.uniform(1, 8, n_samples) + 0.004 * E              # weak coupling
+    noise_rms = rng.uniform(0.05, 0.25, n_samples)
+    X = np.column_stack([contact_stiffness, adhesion, indentation,
+                         contact_slope, noise_rms]).astype(np.float32)
+    feature_names = ['contact_stiffness', 'adhesion', 'indentation_depth',
+                     'contact_slope', 'noise_rms']
+    return X, E.astype(np.float32), feature_names
+
+
+def make_scan_quality_dataset(n_samples=600, random_state=42):
+    """
+    Tabular classification dataset: label an SPM scan as 'good' (0) or
+    'bad' (1) from simple image-quality features.
+
+    Bad scans (tip crashes, streaking, drift, contamination) have higher
+    line-to-line noise and drift and lower feature contrast.
+
+    Returns
+    -------
+    X : ndarray (n_samples, 2)   [line_noise, feature_contrast]  (for 2-D demos)
+    X_full : ndarray (n_samples, 4)  adds [drift, fft_sharpness]
+    y : ndarray (n_samples,)  0 = good, 1 = bad
+    feature_names : list[str]
+    """
+    rng = np.random.default_rng(random_state)
+    n_bad = n_samples // 2
+    n_good = n_samples - n_bad
+
+    # good scans: low line noise, high contrast
+    good_noise = rng.normal(0.18, 0.05, n_good)
+    good_contrast = rng.normal(0.75, 0.10, n_good)
+    good_drift = rng.normal(0.10, 0.04, n_good)
+    good_fft = rng.normal(0.70, 0.10, n_good)
+
+    # bad scans: high line noise, low contrast (with overlap -> nonlinear-ish)
+    bad_noise = rng.normal(0.45, 0.12, n_bad)
+    bad_contrast = rng.normal(0.45, 0.15, n_bad)
+    bad_drift = rng.normal(0.35, 0.12, n_bad)
+    bad_fft = rng.normal(0.40, 0.15, n_bad)
+
+    noise = np.concatenate([good_noise, bad_noise])
+    contrast = np.concatenate([good_contrast, bad_contrast])
+    drift = np.concatenate([good_drift, bad_drift])
+    fft = np.concatenate([good_fft, bad_fft])
+    y = np.concatenate([np.zeros(n_good), np.ones(n_bad)]).astype(int)
+
+    X2 = np.column_stack([noise, contrast]).astype(np.float32)
+    X4 = np.column_stack([noise, contrast, drift, fft]).astype(np.float32)
+    names = ['line_noise', 'feature_contrast', 'drift', 'fft_sharpness']
+    # shuffle
+    order = rng.permutation(n_samples)
+    return X2[order], X4[order], y[order], names
+
+
+def make_force_volume(size=44, n_z=100, z_min_nm=-15.0, z_max_nm=50.0,
+                      moduli_kpa=(35.0, 95.0, 190.0), tip_radius_nm=20.0,
+                      e_jitter=0.10, noise_nn=0.03, random_state=42):
+    """
+    Synthetic AFM force-volume dataset for clustering demos.
+
+    Topography shows only **two** height levels, but the mechanical response
+    (Hertzian force-vs-indentation curves) splits into **three** clusters — a
+    stiff phase is hidden inside one of the height regions and is invisible in
+    topography. Clustering the force curves recovers all three phases.
+
+    Returns
+    -------
+    height : ndarray (size, size)         topography (2 visible levels)
+    force  : ndarray (size, size, n_z)    approach force curves (nN)
+    z_nm   : ndarray (n_z,)               common z / indentation axis (nm), contact at 0
+    true_label : ndarray (size, size)     ground-truth mechanical phase (0,1,2)
+    """
+    rng = np.random.default_rng(random_state)
+
+    # Three Voronoi regions -> ground-truth mechanical phases
+    seeds = rng.integers(0, size, size=(3, 2))
+    coords = np.stack(np.mgrid[0:size, 0:size], axis=-1)
+    dists = np.linalg.norm(coords[:, :, None, :] - seeds[None, None, :, :], axis=-1)
+    true_label = dists.argmin(axis=-1).astype(int)            # 0,1,2
+
+    # Topography: phases 0 and 1 share a height (hidden boundary); phase 2 is raised
+    height = np.where(true_label == 2, 4.0, 1.0).astype(float)
+    height = gaussian_filter(height, sigma=1.0)
+    height += rng.normal(0, 0.06, height.shape)
+
+    # Common z axis; contact at z = 0, free (F~0) before contact
+    z_nm = np.linspace(z_min_nm, z_max_nm, n_z)
+    R = tip_radius_nm * 1e-9
+    delta = np.clip(z_nm, 0, None) * 1e-9                      # indentation (m)
+    delta15 = delta ** 1.5
+
+    force = np.zeros((size, size, n_z), dtype=np.float32)
+    moduli_kpa = np.asarray(moduli_kpa, float)
+    for p in range(3):
+        mask = true_label == p
+        n = int(mask.sum())
+        E = moduli_kpa[p] * 1e3 * (1 + rng.normal(0, e_jitter, n))   # per-pixel modulus (Pa)
+        E_star = E / (1 - 0.5 ** 2)                                  # Poisson 0.5
+        # F (nN) = (4/3) E* sqrt(R) delta^1.5  * 1e9
+        base = (4.0 / 3.0) * E_star[:, None] * np.sqrt(R) * delta15[None, :] * 1e9
+        base += rng.normal(0, noise_nn, base.shape)
+        force[mask] = base.astype(np.float32)
+
+    return (height.astype(np.float32), force, z_nm.astype(np.float32),
+            true_label.astype(int))

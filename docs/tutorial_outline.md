@@ -1,6 +1,6 @@
 # Tutorial Outline
 
-**Machine Learning in Scanning Probe Microscopy**
+**Machine Learning & AI in Scanning Probe Microscopy**
 *RMS AFM & SPM Meeting 2026*
 *Liam Collins*
 
@@ -8,60 +8,50 @@
 
 ## Overview
 
-This tutorial introduces machine learning methods that are directly applicable to SPM data analysis. The focus is practical and visual — we prioritise intuition over derivations, and all examples run on synthetic data so no instrument access is required.
-
-Estimated total time: ~3–4 hours (workshop) or self-paced.
-
----
-
-## Module 00 — Setup & Overview (~20 min)
-- Why ML for SPM?
-- SPM data types: images, spectra, hyperspectral cubes
-- Overview of the tutorial modules
-- Environment check and imports
-
-## Module 01 — PCA Denoising (~45 min)
-- Intuitive introduction to PCA
-- Generating synthetic hyperspectral data
-- Scree plots and component maps
-- PCA reconstruction and denoising
-- Comparing reconstruction quality
-
-## Module 02 — Clustering & Phase Mapping (~45 min)
-- Why clustering for SPM?
-- PCA preprocessing
-- KMeans clustering and cluster maps
-- Gaussian Mixture Models (soft clustering)
-- Choosing the number of clusters (elbow, silhouette)
-
-## Module 03 — Sparse & Smart Measurements (~45 min)
-- The measurement speed problem in SPM
-- Random and grid sparse sampling
-- Reconstruction from sparse data
-- Gradient-guided smart sampling
-- Reconstruction quality vs measurement budget
-
-## Module 04 — Autonomous SPM (~45 min)
-- Closed-loop measurement concepts
-- Uncertainty and acquisition functions
-- The adaptive measurement loop (toy implementation)
-- Comparing adaptive vs random sampling
-- Discussion of real-world implementations
+A big-picture, practical tour of machine learning and AI for SPM. The talk is ~25–30 minutes; the
+repository goes deeper for self-paced study. We prioritise intuition over derivations, and all core
+examples run on synthetic data so no instrument access is required.
 
 ---
 
-## Optional Modules
+## Core modules
 
-### Module 05 — Manifold Learning
-t-SNE and UMAP for visualising hyperspectral SPM data in 2D.
+| # | Module | Idea |
+|---|--------|------|
+| 00 | Setup & Overview | Why ML for SPM; SPM data types; environment check |
+| 01 | PCA Denoising | Separate signal from noise in hyperspectral cubes |
+| 02 | Clustering & Phase Mapping | Find phases/domains without labels (KMeans, GMM) |
+| 03 | Sparse & Smart Measurements | Reconstruct images from few points; sample where it matters |
+| 04 | Autonomous SPM | Closed-loop adaptive measurement vs. random sampling |
+| 05 | Regression: Calibration | Predict numbers — Hertzian fit, modulus from F–D features |
+| 06 | Classification: Scan QC | Predict labels — good/bad scans; confusion matrix, precision/recall |
+| 07 | Neural Networks | From linear models to MLPs and CNNs; when deep learning pays off |
 
-### Module 06 — Image Segmentation
-Thresholding, watershed, and superpixel methods for SPM images.
+## Real-data showcase
 
-### Module 07 — Physics-Informed ML
-Embedding physical models (Lorentzian, contact mechanics) into ML pipelines.
+- **Annexin V HS-AFM** — dimensionality reduction, denoising, clustering and dynamics mapping on a
+  published High-Speed AFM dataset of protein assembly on a lipid bilayer.
+
+## Optional / advanced modules
+
+| # | Module | Idea |
+|---|--------|------|
+| 08 | Manifold Learning | t-SNE / UMAP for hyperspectral SPM data |
+| 09 | Image Segmentation | Otsu, watershed, SLIC superpixels |
+| 10 | Physics-Informed ML | Embedding physical models (Lorentzian, contact mechanics) |
+
+## Frontier (discussion)
+
+- **Foundation models & LLMs** as analysis copilots and literature/metadata miners
+- **Generative AI** for data augmentation, denoising and inverse design
+- **Agents & self-driving labs** — autonomous experiment planning and execution
 
 ---
+
+## Suggested talk arc
+
+Supervised basics (05 → 06) → neural nets (07) → unsupervised tools (01 → 02) →
+smarter measurement (03 → 04) → real data (Annexin) → frontier (LLMs / generative / agents).
 
 ## Prerequisites
 

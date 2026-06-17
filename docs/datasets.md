@@ -11,6 +11,9 @@ All tutorial notebooks generate synthetic data at runtime using functions in `sr
 | `make_hyperspectral_spm` | Hyperspectral cube with latent spectral components | 01, 02 |
 | `make_sparse_target_image` | Smooth image with bumps and edges for sparse sampling | 03 |
 | `make_adaptive_target` | Sharp-feature image for adaptive measurement | 04 |
+| `make_fd_curve` | Synthetic force–distance curve (Hertzian contact + adhesion + noise) | 05 |
+| `make_modulus_dataset` | Tabular features → Young's modulus regression target | 05 |
+| `make_scan_quality_dataset` | Tabular scan-quality features → good/bad labels | 06, 07 |
 
 Generated datasets can optionally be cached to `data/synthetic/` as `.npz` files using `src/utils/helpers.cache_npz`.
 
